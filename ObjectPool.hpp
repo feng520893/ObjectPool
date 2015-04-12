@@ -1,6 +1,7 @@
 #include <iostream>
 #include <queue>
 #include <vector>
+#include <boost/thread/mutex.hpp>
  
 namespace obp
 {
@@ -25,6 +26,7 @@ private:
     std::vector<T*> _all_objects;
     size_t chunk_size_;                         //对象池中预分配对象个数
     static const size_t kdefault_size = 50;     //默认对象池大小
+    boost::mutex _mutex;                        //锁
  
     ObjectPool(const ObjectPool<T>& src);
     ObjectPool<T>& operator=(const ObjectPool<T>& rhs);
@@ -76,6 +78,7 @@ void ObjectPool<T>::allocate_chunk()
 template <typename T>
 T* ObjectPool<T>::acquire_object()
 {
+    boost::mutex::scoped_lock scoped_lock(_mutex);
     if (_free_list.empty())
     {
         allocate_chunk();
@@ -88,6 +91,7 @@ T* ObjectPool<T>::acquire_object()
 template <typename T>
 void ObjectPool<T>::release_object(T* obj)
 {
+    boost::mutex::scoped_lock scoped_lock(_mutex);
     _free_list.push(obj);
 }
 
